@@ -75,9 +75,11 @@ input::placeholder{color:var(--muted)}
   <div class="top">
     <div class="hdr"><span class="title" id="ttl">ROBBIE</span>
       <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-      <button id="hbtn">▤ HISTORY</button><button id="gear">⚙ TILES</button><button id="reset">↺ RESET</button></span></div>
+      <button id="submitbtn" style="background:var(--yellow);color:var(--ink);border:none">✔ SUBMIT WEEK</button><button id="hbtn">▤ HISTORY</button><button id="gear">⚙ TILES</button><button id="reset">↺ RESET</button></span></div>
     <div class="prog"><span id="pt">0 OF 0 DONE</span><span class="bar"><span id="pb" style="width:0"></span></span><span class="cnt" id="left" style="font-family:Oswald;font-size:12px;margin-left:auto"></span></div>
-    <div id="sync" class="cnt" style="font-size:11px;margin:-6px 0 8px">CONNECTING…</div>
+    <div class="cnt" style="font-size:11px;margin:-6px 0 8px;display:flex;gap:10px"><span id="dates"></span><span id="sync">CONNECTING…</span></div>
+    <div id="overdue" style="display:none;background:var(--yellow);color:var(--ink);border-radius:6px;padding:8px 10px;font-size:13px;margin-bottom:10px;letter-spacing:.3px"></div>
+    <div id="confirm" style="display:none;background:var(--wall);border:2px solid var(--yellow);border-radius:8px;padding:12px;margin-bottom:10px"></div>
     <div id="editor"></div>
     <div id="hist" style="display:none;background:var(--wall);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:10px"></div>
     <div id="tray" style="display:flex;flex-wrap:wrap;gap:6px;min-height:34px"></div>
@@ -85,7 +87,7 @@ input::placeholder{color:var(--muted)}
   </div>
   <div id="offrow" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;font-size:12px;color:var(--muted)"></div>
   <div id="week"></div>
-  <div class="note">Tap a tile, then tap a day · tap ☐ to check off · tap a placed tile's name to move it · drag works too</div>
+  <div class="note"><span id="ver"></span><br>Tap a tile, then tap a day · tap ☐ to check off · tap a placed tile's name to move it · drag works too</div>
 </div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -98,7 +100,7 @@ const firebaseConfig = {
   messagingSenderId: "977042411720",
   appId: "1:977042411720:web:e0efdd074c075054a395fd"
 };
-const KID='robbie', CODE_KEY='family-code';
+const KID='robbie', CODE_KEY='family-code', APP_VERSION='1.2';
 const DEFAULT_DEFS=[
 {k:'p',n:'Pitching (On-Site)',c:'nst',q:2,pair:true},
 {k:'w',n:'Weight Training',c:'nst',q:2},
@@ -114,12 +116,12 @@ const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 function mondayOf(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
 const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 function weekNo(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-n);return Math.ceil(((t-new Date(Date.UTC(t.getUTCFullYear(),0,1)))/864e5+1)/7);}
-let defs=JSON.parse(JSON.stringify(DEFAULT_DEFS)),placed=[],uid=0,kid=0,offDays=new Set(),sel=null,editing=false,showHist=false,history=[],weekStart=ymd(mondayOf(new Date()));
+let defs=JSON.parse(JSON.stringify(DEFAULT_DEFS)),placed=[],uid=0,kid=0,offDays=new Set(),sel=null,editing=false,showHist=false,history=[],weekStart=ymd(mondayOf(new Date())),weekNum=1;
 let ready=false,ref=null,saveTimer=null,lastSent='';
 function getCode(){try{return localStorage.getItem(CODE_KEY)||''}catch(e){return ''}}
 function setStatus(t,ok){const el=document.getElementById('sync');if(el){el.textContent=t;el.style.color=ok?'var(--muted)':'var(--danger)';}}
-function stateObj(){return {defs,placed,uid,kid,off:[...offDays],history,weekStart};}
-function applyState(s){defs=s.defs||defs;placed=s.placed||[];uid=s.uid||0;kid=s.kid||0;offDays=new Set(s.off||[]);history=s.history||[];weekStart=s.weekStart||weekStart;}
+function stateObj(){return {defs,placed,uid,kid,off:[...offDays],history,weekStart,weekNum};}
+function applyState(s){defs=s.defs||defs;placed=s.placed||[];uid=s.uid||0;kid=s.kid||0;offDays=new Set(s.off||[]);history=s.history||[];weekStart=s.weekStart||weekStart;weekNum=s.weekNum||1;}
 function save(){
   if(!ready||!ref)return;
   const body=JSON.stringify(stateObj());
@@ -187,7 +189,7 @@ function renderEditor(){
     defs.push({k:'u'+(++kid),n,c:document.getElementById('nc').value,q});render();};}
 function render(){
   placed=placed.filter(p=>p.auto?placed.some(x=>x.id===p.parent):!!D(p.k));
-  save();renderEditor();renderHistory();
+  save();renderEditor();renderHistory();renderSubmit();
   const tray=document.getElementById('tray'),wk=document.getElementById('week'),orow=document.getElementById('offrow');
   const sl=wk.scrollLeft;
   tray.innerHTML='';wk.innerHTML='';orow.innerHTML='';tray.dataset.zone='tray';
@@ -224,23 +226,41 @@ function render(){
   document.getElementById('pb').style.width=(tot?Math.round(dn/tot*100):0)+'%';
   wk.scrollLeft=sl;}
 (function(){const d=new Date();const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-n);
-const w=Math.ceil(((t-new Date(Date.UTC(t.getUTCFullYear(),0,1)))/864e5+1)/7);document.getElementById('ttl').textContent='ROBBIE · WEEK '+w;
 let g='';for(let x=8;x<400;x+=16){const y=7-3.5*Math.sin(x/400*2*Math.PI);g+='<line x1="'+(x-2)+'" y1="'+(y-4)+'" x2="'+(x+2)+'" y2="'+(y+3)+'"/>';}document.getElementById('stitches').innerHTML=g;})();
-function archiveWeek(){
-  if(!placed.length||history.some(h=>h.weekStart===weekStart))return;
+function archiveWeek(submitted){
+  if(history.some(h=>h.weekStart===weekStart))return;
   const rows=[];
   defs.forEach(d=>{rows.push({n:label(d),c:d.c,target:d.q,placed:placed.filter(p=>p.k===d.k).length,done:placed.filter(p=>p.k===d.k&&p.done).length});
     if(d.pair)rows.push({n:'NST: Arm Care (after on-site)',c:'nst',target:d.q,placed:placed.filter(p=>p.k==='_arm').length,done:placed.filter(p=>p.k==='_arm'&&p.done).length});});
   const total=rows.reduce((a,r)=>a+r.target,0),done=rows.reduce((a,r)=>a+Math.min(r.done,r.target),0);
   const ws=new Date(weekStart+'T00:00:00');
-  history.unshift({weekStart,week:weekNo(ws),total,done,rows,snapshot:{placed:JSON.parse(JSON.stringify(placed)),off:[...offDays]}});
+  history.unshift({weekStart,week:weekNum,total,done,rows,snapshot:{placed:JSON.parse(JSON.stringify(placed)),off:[...offDays]}});
   history=history.slice(0,104);}
-function rollover(){const cur=ymd(mondayOf(new Date()));if(weekStart<cur){archiveWeek();placed=[];offDays.clear();sel=null;weekStart=cur;}}
+let confirming=false;
+function addDays(ds,n){const d=new Date(ds+'T00:00:00');d.setDate(d.getDate()+n);return ymd(d);}
+function submitWeek(){
+  archiveWeek(true);
+  const next=addDays(weekStart,7),cur=ymd(mondayOf(new Date()));
+  weekStart=next>cur?next:cur;weekNum++;
+  placed=[];offDays.clear();sel=null;confirming=false;showHist=false;render();}
+function weekScore(){const tot=defs.reduce((a,d)=>a+d.q*(d.pair?2:1),0);const dn=placed.filter(p=>p.done&&D(p.k)).length;return {tot,dn};}
+function renderSubmit(){
+  const ws=new Date(weekStart+'T00:00:00'),wn=weekNum,we=new Date(ws);we.setDate(we.getDate()+6);
+  const f=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'}).toUpperCase();
+  document.getElementById('ttl').textContent='ROBBIE · WEEK '+wn;
+  document.getElementById('dates').textContent=f(ws)+' – '+f(we);
+  const od=document.getElementById('overdue');const cur=ymd(mondayOf(new Date()));
+  if(weekStart<cur){od.style.display='block';od.textContent='WEEK '+wn+' IS OVER. SUBMIT IT TO START WEEK '+(wn+1)+'.';}else od.style.display='none';
+  const cf=document.getElementById('confirm');cf.style.display=confirming?'block':'none';
+  if(confirming){const {tot,dn}=weekScore();
+    cf.innerHTML='<div class="dname" style="color:var(--yellow);margin-bottom:4px">SUBMIT WEEK '+wn+'?</div><div style="font-size:14px;margin-bottom:10px;letter-spacing:.3px">'+dn+' OF '+tot+' DONE. ANYTHING NOT CHECKED COUNTS AS MISSED. THE BOARD WILL CLEAR FOR THE NEXT WEEK.</div><div style="display:flex;gap:8px"><button id="cfyes" style="background:var(--yellow);color:var(--ink);border:none;height:40px;padding:0 16px">YES, SUBMIT</button><button id="cfno" style="height:40px">CANCEL</button></div>';
+    document.getElementById('cfyes').onclick=submitWeek;
+    document.getElementById('cfno').onclick=()=>{confirming=false;render();};}}
 function renderHistory(){
   const h=document.getElementById('hist');h.style.display=showHist?'block':'none';if(!showHist)return;
   const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   let html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span class="dname" style="color:var(--yellow)">HISTORY</span><button id="hclose">✕ CLOSE</button></div>';
-  if(!history.length)html+='<div class="cnt" style="padding:8px 0">No past weeks yet. Each week is saved automatically when a new week starts on Monday.</div>';
+  if(!history.length)html+='<div class="cnt" style="padding:8px 0">No past weeks yet. Tap SUBMIT WEEK to close out a week and save it here.</div>';
   history.forEach((w,i)=>{const s=new Date(w.weekStart+'T00:00:00'),e=new Date(s);e.setDate(e.getDate()+6);
     const pct=w.total?Math.round(w.done/w.total*100):0;
     html+='<details class="wk"'+(i===0?' open':'')+'><summary><span class="dname" style="font-size:20px">WEEK '+w.week+'</span> <span class="cnt">'+fmt(s).toUpperCase()+' – '+fmt(e).toUpperCase()+'</span><span class="score" style="font-size:24px;margin:0 0 0 auto">'+w.done+' OF '+w.total+'</span></summary>'
@@ -253,7 +273,8 @@ function renderHistory(){
   h.innerHTML=html;
   document.getElementById('hclose').onclick=()=>{showHist=false;render();};}
 document.getElementById('hbtn').onclick=()=>{showHist=!showHist;if(showHist)editing=false;render();};
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ready){rollover();render();}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ready)render();});
+document.getElementById('submitbtn').onclick=()=>{confirming=!confirming;if(confirming){editing=false;showHist=false;}render();};
 document.getElementById('gear').onclick=()=>{editing=!editing;if(editing)showHist=false;render()};
 document.getElementById('reset').onclick=()=>{placed=[];offDays.clear();sel=null;render()};
 function start(code){
@@ -264,9 +285,8 @@ function start(code){
   setStatus('CONNECTING…',true);render();
   onSnapshot(ref,{includeMetadataChanges:false},snap=>{
     if(snap.metadata.hasPendingWrites&&ready)return;
-    if(snap.exists()){clearTimeout(saveTimer);const d=snap.data();delete d.updatedAt;lastSent=JSON.stringify({defs:d.defs,placed:d.placed,uid:d.uid,kid:d.kid,off:d.off,history:d.history,weekStart:d.weekStart});applyState(d);}
+    if(snap.exists()){clearTimeout(saveTimer);const d=snap.data();delete d.updatedAt;lastSent=JSON.stringify({defs:d.defs,placed:d.placed,uid:d.uid,kid:d.kid,off:d.off,history:d.history,weekStart:d.weekStart,weekNum:d.weekNum||1});applyState(d);}
     const first=!ready;ready=true;
-    if(first)rollover();
     setStatus(snap.metadata.fromCache?'OFFLINE · WILL SYNC':'SYNCED',true);
     render();
   },err=>{console.error(err);setStatus('CAN\'T CONNECT · CHECK CODE',false);});
@@ -282,6 +302,7 @@ function showJoin(){
     try{localStorage.setItem(CODE_KEY,c)}catch(x){}
     start(c);};}
 window.leaveFamily=()=>{if(!document.getElementById('leaveconf').checked)return;try{localStorage.removeItem(CODE_KEY)}catch(x){}location.reload();};
+document.getElementById('ver').textContent="ROBBIE'S WEEK · v"+APP_VERSION;
 const saved=getCode();
 if(saved)start(saved);else showJoin();
 </script>
