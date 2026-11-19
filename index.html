@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Robbie's Week</title>
+<meta name="theme-color" content="#123524">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Robbie's Week">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--wall:#123524;--panel:#0b2418;--line:#1d4a33;--cream:#f4f1e8;--ink:#123524;--yellow:#F5D547;--white:#ffffff;--muted:#9fb8a8;--danger:#ff8a80;
+--nst:#C8102E;--bc:#4A6FA5;--oth:#E07A1F}
+*{box-sizing:border-box}
+body{margin:0;background:var(--wall);color:var(--white);font-family:Oswald,"Arial Narrow",sans-serif;-webkit-tap-highlight-color:transparent}
+button,select,input{font:inherit;color:var(--white);background:var(--panel);border:1px solid var(--line);border-radius:6px}
+button{cursor:pointer;height:32px;padding:0 10px;font-size:13px;letter-spacing:.5px}
+input,select{height:34px;padding:0 8px;font-size:14px}
+input::placeholder{color:var(--muted)}
+#root{position:relative;max-width:1000px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left))}
+.stitch{display:block;width:100%;height:14px;margin-bottom:6px}
+.top{background:var(--panel);border:3px solid #081a11;border-radius:12px;padding:12px;margin-bottom:10px}
+.hdr{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.title{font-family:'Bebas Neue',sans-serif;color:var(--yellow);font-size:28px;letter-spacing:2px;line-height:1}
+.prog{display:flex;align-items:center;gap:10px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:10px}
+.bar{flex:1;max-width:260px;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.bar span{display:block;height:100%;background:var(--yellow);border-radius:4px;transition:width .3s}
+.chip{font-size:13px;padding:8px 9px;border-radius:5px;user-select:none;-webkit-user-select:none;touch-action:none;line-height:1.25;cursor:pointer;background:var(--cream);color:var(--ink);text-transform:uppercase;letter-spacing:.3px;border-left:5px solid}
+.nst{border-left-color:var(--nst)}
+.bc{border-left-color:var(--bc)}
+.oth{border-left-color:var(--oth)}
+.done{text-decoration:line-through;opacity:.5}
+.sel{outline:3px solid var(--yellow);outline-offset:1px}
+.badge{display:inline-block;margin-left:6px;padding:0 7px;border-radius:10px;background:var(--ink);color:var(--yellow);font-size:12px;font-family:'Bebas Neue';letter-spacing:1px}
+.day{background:var(--panel);border:2px solid var(--line);border-radius:8px;padding:8px 6px;min-height:240px;scroll-snap-align:start}
+.day.over{border-color:var(--yellow)}
+.dname{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--white)}
+.score{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--yellow);text-align:center;line-height:1;margin:2px 0 8px;min-height:30px}
+.cnt{font-size:12px;color:var(--muted);letter-spacing:.5px}
+.ib{border:none;background:none;padding:2px 4px;height:auto;color:var(--muted);font-size:12px}
+.off{font-size:12px;padding:0 10px;height:28px}
+.ghost{position:absolute;pointer-events:none;z-index:10;opacity:.9}
+.row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.step{width:32px;padding:0;font-size:18px}
+#week{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(102px,1fr);gap:6px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px}
+#editor{display:none;background:var(--wall);border:1px solid var(--line);border-radius:8px;padding:4px 10px 10px;margin-bottom:10px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:8px;letter-spacing:.5px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.day .chip{font-size:11px;padding:7px 5px;letter-spacing:0;overflow-wrap:break-word;gap:5px!important}
+.wk{padding:6px 0;border-bottom:1px solid var(--line)}
+.wk summary{display:flex;align-items:baseline;gap:8px;cursor:pointer;list-style:none}
+.wk summary::-webkit-details-marker{display:none}
+.note{font-size:12px;color:var(--muted);margin-top:12px;text-align:center;letter-spacing:.3px}
+</style>
+</head>
+<body>
+<div id="join" style="display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px">
+  <form id="jform" style="background:var(--panel);border:3px solid #081a11;border-radius:12px;padding:24px;max-width:360px;width:100%;display:flex;flex-direction:column;gap:12px">
+    <div class="title">ROBBIE'S WEEK</div>
+    <label for="jcode" style="font-size:14px;color:var(--muted);letter-spacing:.5px">ENTER YOUR FAMILY CODE</label>
+    <input id="jcode" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="your-family-code" style="height:44px;font-size:16px">
+    <div id="jerr" style="font-size:13px;color:var(--danger);min-height:16px"></div>
+    <button type="submit" style="height:44px;background:var(--yellow);color:var(--ink);border:none;font-size:16px">JOIN</button>
+    <div style="font-size:12px;color:var(--muted);line-height:1.5">Everyone in the family uses the same code. The first phone to enter it creates the board.</div>
+  </form>
+</div>
+<div id="root" style="display:none">
+  <svg class="stitch" viewBox="0 0 400 14" preserveAspectRatio="none" aria-hidden="true"><path d="M0 7 Q100 0 200 7 T400 7" fill="none" stroke="#C8102E" stroke-width="1.5"/><g stroke="#C8102E" stroke-width="1.5" id="stitches"></g></svg>
+  <div class="top">
+    <div class="hdr"><span class="title" id="ttl">ROBBIE</span>
+      <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <button id="hbtn">▤ HISTORY</button><button id="gear">⚙ TILES</button><button id="reset">↺ RESET</button></span></div>
+    <div class="prog"><span id="pt">0 OF 0 DONE</span><span class="bar"><span id="pb" style="width:0"></span></span><span class="cnt" id="left" style="font-family:Oswald;font-size:12px;margin-left:auto"></span></div>
+    <div id="sync" class="cnt" style="font-size:11px;margin:-6px 0 8px">CONNECTING…</div>
+    <div id="editor"></div>
+    <div id="hist" style="display:none;background:var(--wall);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:10px"></div>
+    <div id="tray" style="display:flex;flex-wrap:wrap;gap:6px;min-height:34px"></div>
+    <div class="legend"><span><i style="background:var(--nst)"></i>NST</span><span><i style="background:var(--bc)"></i>BARREL CLUB</span><span><i style="background:var(--oth)"></i>OTHER</span></div>
+  </div>
+  <div id="offrow" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;font-size:12px;color:var(--muted)"></div>
+  <div id="week"></div>
+  <div class="note">Tap a tile, then tap a day · tap ☐ to check off · tap a placed tile's name to move it · drag works too</div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeFirestore, persistentLocalCache, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyBX3nMESYPoUbBAaR72-QfZTjzJSDGW9kg",
+  authDomain: "robbie-training.firebaseapp.com",
+  projectId: "robbie-training",
+  storageBucket: "robbie-training.firebasestorage.app",
+  messagingSenderId: "977042411720",
+  appId: "1:977042411720:web:e0efdd074c075054a395fd"
+};
+const KID='robbie', CODE_KEY='family-code';
+const DEFAULT_DEFS=[
+{k:'p',n:'Pitching (On-Site)',c:'nst',q:2,pair:true},
+{k:'w',n:'Weight Training',c:'nst',q:2},
+{k:'s',n:'Linear Speed',c:'nst',q:2},
+{k:'d',n:'Daily Correctives',c:'nst',q:4},
+{k:'a',n:'Arm Care',c:'nst',q:1},
+{k:'r',n:'Recovery Mobility',c:'nst',q:2},
+{k:'h',n:'Hitting (On-Site)',c:'bc',q:1},
+{k:'b',n:'Drills',c:'bc',q:4}];
+const AUTO={k:'_arm',n:'Arm Care',c:'nst'};
+const pre={nst:'NST: ',bc:'BC: ',oth:''};
+const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+function mondayOf(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x;}
+const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+function weekNo(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-n);return Math.ceil(((t-new Date(Date.UTC(t.getUTCFullYear(),0,1)))/864e5+1)/7);}
+let defs=JSON.parse(JSON.stringify(DEFAULT_DEFS)),placed=[],uid=0,kid=0,offDays=new Set(),sel=null,editing=false,showHist=false,history=[],weekStart=ymd(mondayOf(new Date()));
+let ready=false,ref=null,saveTimer=null,lastSent='';
+function getCode(){try{return localStorage.getItem(CODE_KEY)||''}catch(e){return ''}}
+function setStatus(t,ok){const el=document.getElementById('sync');if(el){el.textContent=t;el.style.color=ok?'var(--muted)':'var(--danger)';}}
+function stateObj(){return {defs,placed,uid,kid,off:[...offDays],history,weekStart};}
+function applyState(s){defs=s.defs||defs;placed=s.placed||[];uid=s.uid||0;kid=s.kid||0;offDays=new Set(s.off||[]);history=s.history||[];weekStart=s.weekStart||weekStart;}
+function save(){
+  if(!ready||!ref)return;
+  const body=JSON.stringify(stateObj());
+  if(body===lastSent)return;
+  clearTimeout(saveTimer);setStatus('SAVING…',true);
+  saveTimer=setTimeout(()=>{lastSent=body;
+    setDoc(ref,{...JSON.parse(body),updatedAt:Date.now()})
+      .then(()=>setStatus(navigator.onLine?'SYNCED':'SAVED · WILL SYNC',true))
+      .catch(err=>{console.error(err);setStatus('NOT SAVED · CHECK CODE',false);});},250);}
+const root=document.getElementById('root');
+const D=k=>k==='_arm'?AUTO:defs.find(d=>d.k===k);
+const label=d=>pre[d.c]+d.n;
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const left=k=>D(k).q-placed.filter(p=>p.k===k).length;
+function drop(src,day){
+  if(src.t==='auto'){sel=null;render();return;}
+  if(src.t==='new'&&day!==null&&left(src.v)>0){const id=++uid;placed.push({id,k:src.v,day,done:false});
+    if(D(src.v).pair)placed.push({id:++uid,k:'_arm',day,done:false,auto:true,parent:id});}
+  if(src.t==='mv'){const p=placed.find(x=>x.id==src.v);if(p&&!p.auto){
+    if(day===null)placed=placed.filter(x=>x!==p&&x.parent!==p.id);
+    else{p.day=day;placed.forEach(x=>{if(x.parent===p.id)x.day=day;});}}}
+  sel=null;render();}
+function dragify(el,src,onTap){
+  el.addEventListener('pointerdown',e=>{
+    const sx=e.clientX,sy=e.clientY;let g=null,over=null;
+    const move=ev=>{
+      if(!g&&Math.hypot(ev.clientX-sx,ev.clientY-sy)>8){g=el.cloneNode(true);g.classList.add('ghost');g.style.width=el.offsetWidth+'px';root.appendChild(g);}
+      if(!g)return;ev.preventDefault();const r=root.getBoundingClientRect();
+      g.style.left=(ev.clientX-r.left-el.offsetWidth/2)+'px';g.style.top=(ev.clientY-r.top-20)+'px';
+      const t=document.elementFromPoint(ev.clientX,ev.clientY);const z=t&&t.closest('[data-zone]');
+      if(over&&over!==z)over.classList.remove('over');if(z&&z.classList.contains('day'))z.classList.add('over');over=z;};
+    const up=ev=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up);
+      if(over)over.classList.remove('over');
+      if(g){g.remove();const t=document.elementFromPoint(ev.clientX,ev.clientY);const z=t&&t.closest('[data-zone]');
+        if(z)drop(src,z.dataset.zone==='tray'?null:+z.dataset.zone);}else onTap(ev);};
+    document.addEventListener('pointermove',move,{passive:false});document.addEventListener('pointerup',up);});
+  el.addEventListener('click',e=>e.stopPropagation());}
+const same=(a,b)=>a&&b&&a.t===b.t&&a.v==b.v;
+function renderEditor(){
+  const ed=document.getElementById('editor');ed.style.display=editing?'block':'none';if(!editing)return;
+  ed.innerHTML='';
+  defs.forEach(d=>{const r=document.createElement('div');r.className='row';
+    const used=placed.filter(p=>p.k===d.k).length;
+    r.innerHTML='<span class="chip '+d.c+'" style="flex:1;cursor:default;padding:5px 8px">'+esc(label(d))+'</span>';
+    const m=document.createElement('button');m.className='step';m.textContent='−';m.setAttribute('aria-label','Fewer');
+    m.onclick=()=>{if(d.q>Math.max(1,used)){d.q--;render();}};
+    const q=document.createElement('span');q.style.cssText='min-width:18px;text-align:center;font-size:15px';q.textContent=d.q;
+    const p=document.createElement('button');p.className='step';p.textContent='+';p.setAttribute('aria-label','More');
+    p.onclick=()=>{if(d.q<7){d.q++;render();}};
+    const x=document.createElement('button');x.className='ib';x.textContent='Delete';
+    x.onclick=()=>{defs=defs.filter(z=>z!==d);placed=placed.filter(z=>z.k!==d.k);render();};
+    r.append(m,q,p,x);ed.appendChild(r);});
+  const a=document.createElement('div');a.style.cssText='display:flex;gap:6px;margin-top:10px';
+  a.innerHTML='<select id="nc" style="width:78px"><option value="nst">NST</option><option value="bc">BC</option><option value="oth">Other</option></select><input id="nn" placeholder="Arm Care" style="flex:1;min-width:0"><input id="nq" type="number" min="1" max="7" step="1" value="1" style="width:54px"><button id="add">Add</button>';
+  ed.appendChild(a);const err=document.createElement('div');err.style.cssText='font-size:13px;color:var(--danger);margin-top:4px';ed.appendChild(err);
+  const rd=document.createElement('button');rd.textContent='Restore default tiles';
+  const hint=document.createElement('div');hint.style.cssText='font-size:12px;color:var(--muted);margin-top:8px';hint.textContent='Pitching (On-Site) adds an Arm Care checkbox to its day automatically. The Arm Care tile is for throws outside NST.';ed.appendChild(hint);rd.style.cssText='margin-top:10px;font-size:12px;height:28px';
+  rd.onclick=()=>{defs=JSON.parse(JSON.stringify(DEFAULT_DEFS));placed=[];render();};ed.appendChild(rd);
+  const lv=document.createElement('div');lv.style.cssText='margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+  lv.innerHTML='<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="leaveconf" style="height:auto"> I want to switch this phone to a different family code</label><button onclick="leaveFamily()" style="font-size:12px;height:28px">Switch code</button>';ed.appendChild(lv);
+  document.getElementById('nn').oninput=()=>err.textContent='';
+  document.getElementById('add').onclick=()=>{const n=document.getElementById('nn').value.trim();const q=Math.round(+document.getElementById('nq').value);
+    if(!n){err.textContent='Enter a tile name first';return;}
+    if(!(q>=1&&q<=7)){err.textContent='Count must be 1 to 7';return;}
+    defs.push({k:'u'+(++kid),n,c:document.getElementById('nc').value,q});render();};}
+function render(){
+  placed=placed.filter(p=>p.auto?placed.some(x=>x.id===p.parent):!!D(p.k));
+  save();renderEditor();renderHistory();
+  const tray=document.getElementById('tray'),wk=document.getElementById('week'),orow=document.getElementById('offrow');
+  const sl=wk.scrollLeft;
+  tray.innerHTML='';wk.innerHTML='';orow.innerHTML='';tray.dataset.zone='tray';
+  let total=0;
+  defs.forEach(d=>{const r=left(d.k);total+=r;if(r<=0)return;
+    const src={t:'new',v:d.k};
+    const el=document.createElement('div');el.className='chip '+d.c+(same(sel,src)?' sel':'');
+    el.innerHTML=esc(label(d))+'<span class="badge">×'+r+'</span>';
+    dragify(el,src,()=>{sel=same(sel,src)?null:src;render();});tray.appendChild(el);});
+  document.querySelector('.top').onclick=e=>{if(e.target.closest('button,#editor,input,select'))return;if(sel&&sel.t==='mv')drop(sel,null);};
+  document.getElementById('left').textContent=!sel?(total?total+' TO PLACE':'ALL PLACED'):(sel.t==='mv'?'TAP A DAY TO MOVE · TAP HERE TO REMOVE':'TAP A DAY');
+  if(offDays.size){orow.innerHTML='<span>Off:</span>';
+    days.forEach((dn,i)=>{if(!offDays.has(i))return;const b=document.createElement('button');b.className='off';b.textContent=dn+' ↩';b.onclick=()=>{offDays.delete(i);render()};orow.appendChild(b);});}
+  days.forEach((dn,i)=>{if(offDays.has(i))return;
+    const col=document.createElement('div');col.className='day';col.dataset.zone=i;
+    const items=placed.filter(p=>p.day===i);const dc=items.filter(p=>p.done).length;
+    const hd=document.createElement('div');hd.style.cssText='display:flex;justify-content:space-between;align-items:center';
+    hd.innerHTML='<span class="dname">'+dn.toUpperCase()+'</span>';
+    const ob=document.createElement('button');ob.className='ib';ob.textContent='OFF';ob.setAttribute('aria-label','Turn '+dn+' off');
+    ob.onclick=e=>{e.stopPropagation();placed=placed.filter(p=>p.day!==i);offDays.add(i);render()};hd.appendChild(ob);col.appendChild(hd);
+    const c=document.createElement('div');c.className='score';c.textContent=items.length?dc+'/'+items.length:'–';col.appendChild(c);
+    const list=document.createElement('div');list.style.cssText='display:flex;flex-direction:column;gap:6px';
+    const ordered=[];items.filter(p=>!p.auto).forEach(p=>{ordered.push(p);items.filter(x=>x.parent===p.id).forEach(x=>ordered.push(x));});
+    ordered.forEach(p=>{const d=D(p.k);if(!d)return;const src={t:p.auto?'auto':'mv',v:p.id};const el=document.createElement('div');
+      el.className='chip '+d.c+(same(sel,src)?' sel':'');el.style.cssText='display:flex;gap:7px;align-items:flex-start'+(p.auto?';margin-left:10px;margin-top:-3px':'');
+      el.innerHTML='<span class="box" style="font-size:16px;line-height:1;padding:0 2px">'+(p.done?'☑':'☐')+'</span><span class="'+(p.done?'done':'')+'">'+(p.auto?'↳ ':'')+esc(label(d))+'</span>';
+      dragify(el,src,ev=>{const t=document.elementFromPoint(ev.clientX,ev.clientY);
+        if(t&&t.closest('.box')){p.done=!p.done;sel=null;}else if(!p.auto)sel=same(sel,src)?null:src;render();});list.appendChild(el);});
+    col.appendChild(list);
+    col.onclick=()=>{if(sel)drop(sel,i);};
+    wk.appendChild(col);});
+  const tot=defs.reduce((a,d)=>a+d.q*(d.pair?2:1),0),dn=placed.filter(p=>p.done&&D(p.k)).length;
+  document.getElementById('pt').textContent=dn+' OF '+tot+' DONE';
+  document.getElementById('pb').style.width=(tot?Math.round(dn/tot*100):0)+'%';
+  wk.scrollLeft=sl;}
+(function(){const d=new Date();const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-n);
+const w=Math.ceil(((t-new Date(Date.UTC(t.getUTCFullYear(),0,1)))/864e5+1)/7);document.getElementById('ttl').textContent='ROBBIE · WEEK '+w;
+let g='';for(let x=8;x<400;x+=16){const y=7-3.5*Math.sin(x/400*2*Math.PI);g+='<line x1="'+(x-2)+'" y1="'+(y-4)+'" x2="'+(x+2)+'" y2="'+(y+3)+'"/>';}document.getElementById('stitches').innerHTML=g;})();
+function archiveWeek(){
+  if(!placed.length||history.some(h=>h.weekStart===weekStart))return;
+  const rows=[];
+  defs.forEach(d=>{rows.push({n:label(d),c:d.c,target:d.q,placed:placed.filter(p=>p.k===d.k).length,done:placed.filter(p=>p.k===d.k&&p.done).length});
+    if(d.pair)rows.push({n:'NST: Arm Care (after on-site)',c:'nst',target:d.q,placed:placed.filter(p=>p.k==='_arm').length,done:placed.filter(p=>p.k==='_arm'&&p.done).length});});
+  const total=rows.reduce((a,r)=>a+r.target,0),done=rows.reduce((a,r)=>a+Math.min(r.done,r.target),0);
+  const ws=new Date(weekStart+'T00:00:00');
+  history.unshift({weekStart,week:weekNo(ws),total,done,rows,snapshot:{placed:JSON.parse(JSON.stringify(placed)),off:[...offDays]}});
+  history=history.slice(0,104);}
+function rollover(){const cur=ymd(mondayOf(new Date()));if(weekStart<cur){archiveWeek();placed=[];offDays.clear();sel=null;weekStart=cur;}}
+function renderHistory(){
+  const h=document.getElementById('hist');h.style.display=showHist?'block':'none';if(!showHist)return;
+  const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  let html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span class="dname" style="color:var(--yellow)">HISTORY</span><button id="hclose">✕ CLOSE</button></div>';
+  if(!history.length)html+='<div class="cnt" style="padding:8px 0">No past weeks yet. Each week is saved automatically when a new week starts on Monday.</div>';
+  history.forEach((w,i)=>{const s=new Date(w.weekStart+'T00:00:00'),e=new Date(s);e.setDate(e.getDate()+6);
+    const pct=w.total?Math.round(w.done/w.total*100):0;
+    html+='<details class="wk"'+(i===0?' open':'')+'><summary><span class="dname" style="font-size:20px">WEEK '+w.week+'</span> <span class="cnt">'+fmt(s).toUpperCase()+' – '+fmt(e).toUpperCase()+'</span><span class="score" style="font-size:24px;margin:0 0 0 auto">'+w.done+' OF '+w.total+'</span></summary>'
+      +'<div class="bar" style="max-width:none;margin:6px 0 10px"><span style="width:'+pct+'%"></span></div>';
+    w.rows.forEach(r=>{const short=r.done<r.target;const rp=r.target?Math.round(Math.min(r.done,r.target)/r.target*100):0;
+      html+='<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-top:1px solid var(--line);font-size:13px;letter-spacing:.3px"><span style="flex:1;text-transform:uppercase">'+esc(r.n)+'</span>'
+        +'<span class="bar" style="flex:0 0 90px;height:6px"><span style="width:'+rp+'%;background:'+(short?'var(--danger)':'var(--yellow)')+'"></span></span>'
+        +'<span style="min-width:38px;text-align:right;font-family:\'Bebas Neue\';font-size:18px;color:'+(short?'var(--danger)':'var(--yellow)')+'">'+r.done+'/'+r.target+'</span></div>';});
+    html+='</details>';});
+  h.innerHTML=html;
+  document.getElementById('hclose').onclick=()=>{showHist=false;render();};}
+document.getElementById('hbtn').onclick=()=>{showHist=!showHist;if(showHist)editing=false;render();};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ready){rollover();render();}});
+document.getElementById('gear').onclick=()=>{editing=!editing;if(editing)showHist=false;render()};
+document.getElementById('reset').onclick=()=>{placed=[];offDays.clear();sel=null;render()};
+function start(code){
+  document.getElementById('join').style.display='none';document.getElementById('root').style.display='block';
+  const app=initializeApp(firebaseConfig);
+  const db=initializeFirestore(app,{localCache:persistentLocalCache()});
+  ref=doc(db,'families',code,'kids',KID);
+  setStatus('CONNECTING…',true);render();
+  onSnapshot(ref,{includeMetadataChanges:false},snap=>{
+    if(snap.metadata.hasPendingWrites&&ready)return;
+    if(snap.exists()){clearTimeout(saveTimer);const d=snap.data();delete d.updatedAt;lastSent=JSON.stringify({defs:d.defs,placed:d.placed,uid:d.uid,kid:d.kid,off:d.off,history:d.history,weekStart:d.weekStart});applyState(d);}
+    const first=!ready;ready=true;
+    if(first)rollover();
+    setStatus(snap.metadata.fromCache?'OFFLINE · WILL SYNC':'SYNCED',true);
+    render();
+  },err=>{console.error(err);setStatus('CAN\'T CONNECT · CHECK CODE',false);});
+  window.addEventListener('online',()=>setStatus('SYNCED',true));
+  window.addEventListener('offline',()=>setStatus('OFFLINE · WILL SYNC',true));}
+function showJoin(){
+  document.getElementById('root').style.display='none';document.getElementById('join').style.display='flex';
+  const inp=document.getElementById('jcode'),err=document.getElementById('jerr');
+  inp.oninput=()=>err.textContent='';
+  document.getElementById('jform').onsubmit=e=>{e.preventDefault();const c=inp.value.trim().toLowerCase();
+    if(c.length<12){err.textContent='Use at least 12 characters, like smith-family-2026';return;}
+    if(!/^[a-z0-9-]+$/.test(c)){err.textContent='Use only letters, numbers and dashes';return;}
+    try{localStorage.setItem(CODE_KEY,c)}catch(x){}
+    start(c);};}
+window.leaveFamily=()=>{if(!document.getElementById('leaveconf').checked)return;try{localStorage.removeItem(CODE_KEY)}catch(x){}location.reload();};
+const saved=getCode();
+if(saved)start(saved);else showJoin();
+</script>
+</body>
+</html>
